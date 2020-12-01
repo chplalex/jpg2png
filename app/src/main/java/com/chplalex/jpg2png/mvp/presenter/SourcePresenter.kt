@@ -1,20 +1,20 @@
 package com.chplalex.jpg2png.mvp.presenter
 
-import android.content.Context
-import android.net.Uri
-import android.widget.Toast
-import com.chplalex.jpg2png.common.getFileNameFromUri
 import com.chplalex.jpg2png.mvp.view.SourceView
 import com.chplalex.jpg2png.navigation.Screens
+import com.chplalex.jpg2png.ui.converter.ImageConverter
+import io.reactivex.rxjava3.core.Scheduler
+import io.reactivex.rxjava3.disposables.Disposable
 import moxy.MvpPresenter
 import ru.terrakok.cicerone.Router
 
 class SourcePresenter(
-    private val context: Context,
+    private val scheduler: Scheduler,
     private val router: Router
 ) : MvpPresenter<SourceView>() {
 
-    private var uri: Uri? = null
+    private var imageConverter: ImageConverter? = null
+    private var disposable: Disposable? = null
 
     fun btnClicked() {
         convertJpg2Png()
@@ -25,24 +25,33 @@ class SourcePresenter(
         viewState.init()
     }
 
-    fun setData(uri: Uri) {
-        this.uri = uri
-        viewState.setImage(uri)
-        getFileNameFromUri(context, uri)?.let { viewState.setText(it) }
+    fun setData(imageConverter: ImageConverter) {
+        this.imageConverter = imageConverter
+        viewState.setImage(imageConverter.getSourceUri())
+        viewState.setText(imageConverter.getSourceName())
     }
 
-    private fun convertJpg2Png() {
-        if (uri == null) return
-
-        Toast.makeText(context, "Конвертируем!", Toast.LENGTH_SHORT).show()
-
-        // здесь будет код конвертации
-        // пока выводим в Target исходное изображение
-        val targetUri: Uri = uri!!
-        router.navigateTo(Screens.TargetScreen(targetUri))
+    private fun convertJpg2Png() = imageConverter?.let {
+        viewState.showProgress()
+        disposable = it.convert()
+            .observeOn(scheduler)
+            .subscribe({
+                viewState.hideProgress()
+                viewState.showSuccess()
+                router.navigateTo(Screens.TargetScreen(it.getTargetUri(), it.getTargetName()))
+            }, {
+                viewState.hideProgress()
+                viewState.showError()
+            })
     }
 
-    fun backClicked(): Boolean {
+    fun cancelPressed() {
+        disposable?.dispose()
+        viewState.hideProgress()
+        viewState.showCancel()
+    }
+
+    fun backPressed(): Boolean {
         router.exit()
         return true
     }

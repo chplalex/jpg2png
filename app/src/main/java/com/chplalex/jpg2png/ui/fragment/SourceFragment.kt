@@ -1,16 +1,21 @@
 package com.chplalex.jpg2png.ui.fragment
 
+import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import com.chplalex.jpg2png.R
 import com.chplalex.jpg2png.mvp.presenter.SourcePresenter
 import com.chplalex.jpg2png.mvp.view.SourceView
 import com.chplalex.jpg2png.ui.App
 import com.chplalex.jpg2png.ui.BackButtonListener
+import com.chplalex.jpg2png.ui.converter.ImageConverter
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import kotlinx.android.synthetic.main.fragment_source.*
 import moxy.MvpAppCompatActivity
 import moxy.MvpAppCompatFragment
@@ -25,13 +30,13 @@ class SourceFragment : MvpAppCompatFragment(), SourceView, BackButtonListener {
     }
 
     private val presenter by moxyPresenter {
-        SourcePresenter(requireContext(), App.instance.router)
+        SourcePresenter(AndroidSchedulers.mainThread(), App.instance.router)
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_source, container, false).apply {
+    ): View = View.inflate(context, R.layout.fragment_source, null).apply {
         activity?.title = resources.getString(R.string.label_fragment_source)
     }
 
@@ -53,7 +58,7 @@ class SourceFragment : MvpAppCompatFragment(), SourceView, BackButtonListener {
         super.onActivityResult(requestCode, resultCode, resultData)
         if (requestCode == OPEN_IMAGE_REQUEST_CODE && resultCode == MvpAppCompatActivity.RESULT_OK) {
             resultData?.data?.also {
-                presenter.setData(it)
+                presenter.setData(ImageConverter(requireContext(), it))
             }
         }
     }
@@ -71,5 +76,31 @@ class SourceFragment : MvpAppCompatFragment(), SourceView, BackButtonListener {
         txtSource.text = data
     }
 
-    override fun backPressed() = presenter.backClicked()
+    private var dialog: Dialog? = null
+
+    override fun showProgress() {
+        dialog = AlertDialog.Builder(requireContext())
+            .setMessage("Конвертация в процессе")
+            .setNegativeButton("Отмена") { _, _ -> presenter.cancelPressed() }
+            .create()
+        dialog?.show()
+    }
+
+    override fun hideProgress() {
+        dialog?.dismiss()
+    }
+
+    override fun showSuccess() {
+        Toast.makeText(context, "Конвертация успешно завершена", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showError() {
+        Toast.makeText(context, "Конвертация завершена с ошибкой", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showCancel() {
+        Toast.makeText(context, "Конвертация отменена", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun backPressed() = presenter.backPressed()
 }

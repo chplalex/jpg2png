@@ -1,12 +1,6 @@
 package com.chplalex.jpg2png.ui.activity
 
-import android.content.Intent
 import android.os.Bundle
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import androidx.appcompat.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.Toast
 import com.chplalex.jpg2png.R
 import com.chplalex.jpg2png.mvp.presenter.MainPresenter
 import com.chplalex.jpg2png.mvp.view.MainView
@@ -20,9 +14,7 @@ class MainActivity : MvpAppCompatActivity(), MainView  {
 
     private val navigator = SupportAppNavigator(this, supportFragmentManager, R.id.fragmentContainer)
     private val navigatorHolder = App.instance.navigatorHolder
-    private val presenter by moxyPresenter {
-        MainPresenter(App.instance.router)
-    }
+    private val presenter by moxyPresenter { MainPresenter(App.instance.router) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,10 +32,9 @@ class MainActivity : MvpAppCompatActivity(), MainView  {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         supportFragmentManager.fragments.forEach {
             if (it is BackButtonListener && it.backPressed()) return
         }
-        presenter.backClick()
+        presenter.backPressed()
     }
 }

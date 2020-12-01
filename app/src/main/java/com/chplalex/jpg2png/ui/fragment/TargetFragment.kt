@@ -17,28 +17,31 @@ import moxy.ktx.moxyPresenter
 class TargetFragment : MvpAppCompatFragment(), TargetView, BackButtonListener {
 
     companion object {
-        private const val ARG_KEY = "FRAGMENT_TARGET_ARG_KEY"
+        private const val URI_KEY = "FRAGMENT_TARGET_ARG_URI_KEY"
+        private const val NAME_KEY = "FRAGMENT_TARGET_ARG_NAME_KEY"
 
-        fun newInstance(uri: Uri) = TargetFragment().apply {
+        fun newInstance(uri: Uri, name: String) = TargetFragment().apply {
             arguments = Bundle().apply {
-                putParcelable(ARG_KEY, uri)
+                putParcelable(URI_KEY, uri)
+                putString(NAME_KEY, name)
             }
         }
     }
 
     private val presenter by moxyPresenter {
-        val uri = arguments?.get(ARG_KEY) as Uri
-        TargetPresenter(requireContext(), App.instance.router, uri)
+        val uri = arguments?.get(URI_KEY) as Uri
+        val name = arguments?.getString(NAME_KEY) as String
+        TargetPresenter(App.instance.router, uri, name)
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_target, container, false).also {
+    ): View = View.inflate(context, R.layout.fragment_target, null).also {
         activity?.title = resources.getString(R.string.label_fragment_target)
     }
 
-    override fun backPressed() = presenter.backClick()
+    override fun backPressed() = presenter.backPressed()
 
     override fun setImage(data: Uri) {
         imgTarget.setImageURI(data)
